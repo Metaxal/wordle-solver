@@ -3,10 +3,10 @@
          racket/list
          racket/pretty
          racket/string
+         racket/file
          racket/format
          racket/port
          racket/random
-         (for-syntax racket/base syntax/parse)
          define2
          global)
 
@@ -42,7 +42,8 @@
 (define word-len 5)
 (define n-possible-clues (expt 3 word-len))
 
-(define (clue-win? c) (= 0 c))  ; 0 is "GGGGG" in integer encoding
+(define clue-win 0) ; 0 is "GGGGG" in integer encoding
+(define (clue-win? c) (= clue-win c))
 
 (define (history-win? history)
   (clue-win? (second (first history))))
@@ -220,7 +221,8 @@
     (define clue (read-line))
     (cond
       [(member clue '("help"))
-       (displayln "Commands: list, help")]
+       (displayln "Commands: list, help")
+       (loop)]
       [(member clue '("list"))
        (pretty-print goals+)
        (loop)]
@@ -237,7 +239,8 @@
 
     (case guess
       [("help")
-       (displayln "Commands: list, best, help")]
+       (displayln "Commands: list, best, help")
+       (loop)]
       [("list")
        (unless (*silent?*) (pretty-print goals+))
        (loop)]
@@ -355,9 +358,8 @@
      (and (guess? w) w))
    (with-input-from-file f port->lines)))
 
-(module+ main
-  (require racket/file)
-  
+(define (main #:! play)
+ 
   (define-global *target* #false
     '("The word to guess. If not provided, clues are asked."
       "If 'all', then all words are tried in order, and some statistics are printed."
@@ -400,6 +402,7 @@
     (if (and (*cache-file*) (file-exists? (*cache-file*)))
       (make-hash (file->value (*cache-file*)))
       (make-hash)))
+  
   (cond [(equal? target "all")
          ; Play all games with all goal words as targets.
          (define occs (make-hash))
@@ -413,3 +416,5 @@
          (println (play target goals allowed #:history-hash history-hash))])
   (when (*cache-file*)
     (write-to-file (hash->list history-hash) (*cache-file*) #:exists 'replace)))
+
+(module+ main (main #:play play))

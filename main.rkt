@@ -1,4 +1,5 @@
 #lang racket/base
 
-(require (submod "wordle-solver.rkt" main))
+(require "wordle-solver.rkt")
+(main)
 
