@@ -33,8 +33,8 @@ Use `--target <word>` to make it guess a particular word that is assumed to be i
 
 The first guess is a little slow to compute (a few seconds), but because it 
 is always the same it can be cached. Use the flag `--cache <cache-file>` to 
-load (if the file exists) and save cached results. The cache file should made 
-be specific to the list of goals, the list of allowed words and whether 
+load (if the file exists) and save cached results. The cache file should be made 
+specific to the list of goals, the list of allowed words and whether 
 `--consistent-only` is used.
 
 Use the flag `--consistent-only` to make the solver play in 'hard mode', that is,
@@ -44,7 +44,8 @@ any word played must be consistent with all the clues obtained so far.
 ```shell
 racket -l- wordle-solver --target all --silent
 ```
-Observe how the solver speed up as more results get cached. The chac
+Observe how the solver speeds up as more results get cached. The cache can be saved to disk
+using the `--cache <file>` to be reused in a later invokation of the program (with the same flag).
 
 #### Use the solver as an assistant (just omit the `--target` flag):
 ```shell
