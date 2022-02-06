@@ -14,17 +14,7 @@
 ;;; License: [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0) or
 ;;;          [MIT license](http://opensource.org/licenses/MIT) at your option.
 
-;;; First, try:
-;;;   racket wordle-solver.rkt --help
-;;;
-;;; To play the game manually:
-;;;   racket wordle-solver.rkt --target random --no-auto --share-social
-;;;
-;;; It's also pretty fun to watch the memoization do its work and accelerate the search
-;;; as more and more words are solved (very first word is slow to solve):
-;;;   racket wordle-solver.rkt --target all --silent
-;;; or for a longer watch:
-;;;   racket wordle-solver.rkt --target all --silent --goals allowed.txt
+;;; See the README: https://github.com/Metaxal/wordle-solver#readme
 
 (provide (all-defined-out))
 
@@ -45,11 +35,8 @@
 (define-global:boolean *share-social?* #f
   "Display summary to share on social media?")
 
-;;; clue: (or/c 'B 'O 'G)
-;;; B(lack): not in word, O(range): in word but wrong place, G(reen): in word but right place
-;;;
-;;; > If the solution was “arrow” and you typed “mamas”, you’d get a yellow box for each “a”
-
+;;; A clue/int is a number between 0 and 3^5, and corresponds to the sequence of black, yellow and
+;;; green squares (clue/string).
 ;;; Greedy goal: minimize the size of the remaining set in the worst case
 
 (define word-len 5)
@@ -390,79 +377,3 @@
          (println (play target goals allowed #:history-hash history-hash))])
   (when (*cache-file*)
     (write-to-file (hash->list history-hash) (*cache-file*) #:exists 'replace)))
-
-#| Some stats
-Expected case
-------
-arise as first word
- time racket wordle-solver.rkt --target all --silent
-shave: ((1 . 1) (2 . 46) (3 . 1112) (4 . 1091) (5 . 65))
-expectation: 8118
-
- time racket wordle-solver.rkt --target all --silent --consistent-only
-shave: ((1 . 1) (2 . 87) (3 . 983) (4 . 1008) (5 . 185) (6 . 35) (7 . 12) (8 . 4))
-expectation: 8407
-
- time racket wordle-solver.rkt --target all --silent --no-use-allowed
-shave: ((1 . 1) (2 . 53) (3 . 1077) (4 . 1089) (5 . 93) (6 . 2))
-expectation: 8171
-
- time racket wordle-solver.rkt --target all --silent --no-use-allowed --consistent-only
-shave: ((1 . 1) (2 . 122) (3 . 971) (4 . 947) (5 . 219) (6 . 39) (7 . 12) (8 . 4))
-expectation: 8391, fails on 16 words
-------
-raise as first word
- time racket wordle-solver.rkt --target all --silent
-shave: ((1 . 1) (2 . 56) (3 . 1118) (4 . 1078) (5 . 62))
-expectation: 8089
-
- time racket wordle-solver.rkt --target all --silent --consistent-only
-shave: ((1 . 1) (2 . 100) (3 . 976) (4 . 994) (5 . 192) (6 . 37) (7 . 12) (8 . 3))
-expectation: 8395
- hard words: match, vaunt, hound, all due to being trapped on trying the first letter.
-
- time racket wordle-solver.rkt --target all --silent --no-use-allowed
-shave: ((1 . 1) (2 . 61) (3 . 1073) (4 . 1090) (5 . 90))
-expectation: 8152
-
- time racket wordle-solver.rkt --target all --silent --no-use-allowed --consistent-only
-shave: ((1 . 1) (2 . 131) (3 . 957) (4 . 946) (5 . 225) (6 . 41) (7 . 11) (8 . 3))
-expectation: 8390, fails on 14 words
-----
-roate (optimal found in greedy auto mode)
- time racket wordle-solver.rkt --target all --silent
-shave: ((2 . 55) (3 . 1130) (4 . 1090) (5 . 40))
-worst-case: 5	expectation: 8060
-
- time racket wordle-solver.rkt --target all --silent --consistent-only
-shave: ((2 . 92) (3 . 1015) (4 . 981) (5 . 185) (6 . 34) (7 . 7) (8 . 1))
-worst-case: 8	expectation: 8339
-(fails only on 8 words instead of 16 for arise!)
-
-/!\ roate is in the allowed list
- time racket wordle-solver.rkt --target all --silent --no-use-allowed
-shave: ((2 . 65) (3 . 1085) (4 . 1094) (5 . 71))
-worst-case: 5	expectation: 8116
-
-/!\ roate is in the allowed list
- time racket wordle-solver.rkt --target all --silent --no-use-allowed --consistent-only
-shave: ((2 . 126) (3 . 1006) (4 . 935) (5 . 196) (6 . 39) (7 . 8) (8 . 3) (9 . 2))
-worst-case: 9	expectation: 8322
-(better expectation than raise, but worse worst case, but fails on only 13 words)
-
------
-reast: (not a goal word)
- time racket wordle-solver.rkt --target all --silent
-worst-case: 5	expectation: 3.4475161987041036	#guesses: 7981	failures: 0
-
- time racket wordle-solver.rkt --target all --silent --consistent-only
-worst-case: 8	expectation: 3.545572354211663	failures: 9
-
- time racket wordle-solver.rkt --target all --silent --no-use-allowed
-worst-case: 5	expectation: 3.4738660907127428	failures: 0
-
- time racket wordle-solver.rkt --target all --silent --no-use-allowed --consistent-only
-worst-case: 9	expectation: 3.5473002159827214	failures: 11
-
-
-|#
