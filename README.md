@@ -61,10 +61,16 @@ after the next clue is observed.
 
 While this greedy strategy is not optimal (an optimal strategy requires planning),
 in particular in 'hard mode' (flag `--consistent-only`),
-it is still quite good in general.
+it is still quite good in general especially given how simple it is.
 
-On the Wordle list of original words and allowed words,
-it has an expected number of guesses of 3.48 while [the optimum
+On the Wordle original lists of 2315 solution words and 10657 allowed words,
+it has an expected number of guesses of 3.48 (8060/2315) while [the optimum
 is 3.42](http://sonorouschocolate.com/notes/index.php?title=The_best_strategies_for_Wordle#Assumptions_about_the_rules_of_Wordle)
-(see also this [blog post](https://www.poirrier.ca/notes/wordle-optimal/)).
+(see also this [blog post](https://www.poirrier.ca/notes/wordle-optimal/)),
+with a worst case of 5 guesses at most.
 
+The same in hard mode requires 3.60 (8339/2315) guesses on average, with 7 words requiring 7 guesses
+and 1 word requiring 8 guesses.
+
+On the whole list of 12972 words, our strategy takes 4.12 guesses on average (53503/12972),
+with a worst case of 8 (only 1 word), and 25 words taking more than 6 guesses.
