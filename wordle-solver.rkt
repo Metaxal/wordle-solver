@@ -124,7 +124,7 @@
 ;; Then expected size is (∑_i n_i²) / (∑_i n_i)
 ;; NOTICE: to avoid unnecessary computation, we don't divide by (length goals+),
 ;; as we assume that goals+ doesn't change in the comparison class.
-(define (guess-value guess goals+)
+(define (guess-value/expected-size guess goals+)
   (define vclues (make-vector n-possible-clues 0)) ; there are only 243 possible clues!
 
   (define clue-min n-possible-clues) ; use to iterate over vclues only in the segment of interest
@@ -139,7 +139,43 @@
   (for/sum ([n (in-vector vclues clue-min (max clue-min (+ 1 clue-max)))])
     (* n n)))
 
-;; Returns the guess among guesses that separates goals+ the best.
+;; Maximum size of the 
+(define (guess-value/max-size guess goals+)
+  (define vclues (make-vector n-possible-clues 0)) ; there are only 243 possible clues!
+
+  (define clue-min n-possible-clues) ; use to iterate over vclues only in the segment of interest
+  (define clue-max 0)
+  (for ([target (in-list goals+)])
+    (define clue (guess->clue/int guess target))
+    (unless (clue-win? clue) ; consider set size of 0 for winning clue
+      (when (< clue clue-min) (set! clue-min clue))
+      (when (> clue clue-max) (set! clue-max clue))
+      (vector-set! vclues clue (+ 1 (vector-ref vclues clue)))))
+
+  (for/fold ([v -inf.0])
+            ([n (in-vector vclues clue-min (max clue-min (+ 1 clue-max)))])
+    (max v n)))
+
+; Negative entropy of the remaining words
+(define (guess-value/negentropy guess goals+)
+  (define vclues (make-vector n-possible-clues 0)) ; there are only 243 possible clues!
+
+  (define clue-min n-possible-clues) ; use to iterate over vclues only in the segment of interest
+  (define clue-max 0)
+  (for ([target (in-list goals+)])
+    (define clue (guess->clue/int guess target))
+    (vector-set! vclues clue (+ 1 (vector-ref vclues clue))))
+
+  (for/sum ([n (in-vector vclues clue-min (max clue-min (+ 1 clue-max)))])
+    (if (= 0 n) 0 (* n (- (log n) (log (length goals+)))))))
+
+(define guess-value
+  #;guess-value/max-size
+  guess-value/expected-size
+  #;guess-value/negentropy)
+
+;; Returns the guess among guesses that minimizes guess-value, i.e.,
+;; that separates goals+ the best.
 ;; aka get-best-action
 (define (get-best-guess guesses goals+)
   ; Pick an action.
