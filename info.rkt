@@ -1,7 +1,9 @@
 #lang info
 
 (define deps
-  '("base"))
+  '("base"
+    "define2"
+    "global"))
 
 (define build-deps
   '("at-exp-lib" "rackunit-lib" "scribble-lib" "racket-doc"))
@@ -12,3 +14,6 @@
 #;
 (define scribblings
   '(["README.scrbl" () (library) "wordle-solver"]))
+
+(define license
+  '(Apache-2.0 OR MIT))
