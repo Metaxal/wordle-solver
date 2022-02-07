@@ -1,5 +1,5 @@
 #lang racket/base
 
 (require "wordle-solver.rkt")
-(main)
+(main #:play play)
 
