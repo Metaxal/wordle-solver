@@ -1,5 +1,7 @@
 #lang info
 
+(define collection "wordle-solver")
+
 (define deps
   '("base"
     "define2"
@@ -14,9 +16,12 @@
 (define compile-omit-paths
   '("backups"))
 
-#;
 (define scribblings
-  '(["README.scrbl" () (library) "wordle-solver"]))
+  '(["scribblings/wordle-solver.scrbl" ()]))
+
+(define pkg-desc "Wordle solver: A simple greedy solver for Wordle")
+
+(define pkg-authors '(lorseau))
 
 (define license
   '(Apache-2.0 OR MIT))

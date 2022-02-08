@@ -63,6 +63,10 @@
                            (char-lower-case? x)))
                (string->list str))))
 
+(define (clue/int? x)
+  (and (exact-nonnegative-integer? x)
+       (< x n-possible-clues)))
+
 (define (clue/string? str)
   (and (= word-len (string-length str))
        (for/and ([c str]) (member c '(#\B #\Y #\G)))))
