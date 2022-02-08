@@ -11,6 +11,9 @@
 (define compile-omit-files
   '("wordle-solver-uai.rkt" "wordle-revealer.rkt"))
 
+(define compile-omit-paths
+  '("backups"))
+
 #;
 (define scribblings
   '(["README.scrbl" () (library) "wordle-solver"]))
