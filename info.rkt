@@ -19,6 +19,8 @@
 (define scribblings
   '(["scribblings/wordle-solver.scrbl" ()]))
 
+(define version "0.0")
+
 (define pkg-desc "Wordle solver: A simple greedy solver for Wordle")
 
 (define pkg-authors '(lorseau))
