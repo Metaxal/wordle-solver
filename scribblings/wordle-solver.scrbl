@@ -37,6 +37,7 @@ Its behaviour depends on several globals described below.
             [*auto?* global?]
             [*silent?* global?]
             [*squares?* global?]
+            [*hard-mode?* global?]
             [*consistent-only?* global?]
             [*share-social?* global?]
             )]{

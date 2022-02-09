@@ -24,7 +24,10 @@
   "Hide most output?")
 
 (define-global:boolean *consistent-only?* #false
-  "Allow only guesses that are consistent with all seen clues? (set it to 'true' for 'hard mode'.)")
+  "Allow only guesses that are consistent with all seen clues?")
+
+(define-global:boolean *hard-mode?* #false
+  "Play in hard mode?")
 
 (define-global:boolean *auto?* #true
   "In auto mode, the word is guessed automatically; otherwise the user is queried.")
@@ -133,7 +136,7 @@
               (+ 1 (* n 3))])]))) ; Yellow
 
 ;; This function works for all ascii characters (<256), using a hasheq instead of a vector,
-;; but is twice as slow.
+;; but is twice as slow (although not always).
 (define (guess->clue/int guess solution)
   (define letter-counts (make-hasheq)) ; Notice: only for ascii!
   (define greens
@@ -163,7 +166,9 @@
   (check-equal? (guess->clue/int "thoss" "those") (clue/string->clue/int "GGGGB"))
   (check-equal? (guess->clue/int "tense" "those") (clue/string->clue/int "GBBGG"))
   (check-equal? (guess->clue/int "asset" "those") (clue/string->clue/int "BYBYY"))
-  (check-equal? (guess->clue/int "ssset" "those") (clue/string->clue/int "YBBYY")))
+  (check-equal? (guess->clue/int "ssset" "those") (clue/string->clue/int "YBBYY"))
+  (check-equal? (guess->clue/int "silly" "daily") (clue/string->clue/int "BYBGG"))
+  (check-equal? (guess->clue/int "silly" "hotel") (clue/string->clue/int "BBYBB")))
 
 ;; Then expected size is (∑_i n_i²) / (∑_i n_i)
 ;; NOTICE: to avoid unnecessary computation, we don't divide by (length goals+),
@@ -239,24 +244,88 @@
              #;(displayln (list guess max-n-goal++))
              (values best-guess min-max-n-goal++)))))
 
-(define (get-best-guess* goals+ goals- allowed+ allowed-
-                         #:consistent-only? [consistent-only? #f])
-  (define words
-    ; Note: we always put goals+ first to prefer consistent answers.
-    (if consistent-only?
-      (in-sequences (in-list goals+)
-                    (in-list allowed+))
-      (in-sequences (in-list goals+)
-                    (in-list goals-)
-                    (in-list allowed+)
-                    (in-list allowed-))))
-  (get-best-guess words goals+))
-
 ;; Returns the sublist of words in goals+ that are consistent with the given clue.
 ;; aka update-environment-posteriors, with binary posteriors
-(define (partition-goals+ guess clue goals+)
-  (partition (λ (g+) (= clue (guess->clue/int guess g+)))
-             goals+))
+(define (filter-goals+ guess clue goals+)
+  (filter (λ (g+) (= clue (guess->clue/int guess g+)))
+          goals+))
+
+(define (filter-actions/no-filter guess clue actions)
+  actions)
+
+(define filter-actions/consistent-only filter-goals+)
+
+(define (filter-actions/hard-mode guess clue/int actions)
+  ; Can reuse black letters (even though this is inconsistent with the guess).
+  (define clue/str (clue/int->clue/string clue/int))
+  (filter
+   (λ (action)
+     (define letters '())
+     (and
+      ; First we check that all green spots of the guess are also green in the action.
+      (for/and ([g (in-string guess)] [c (in-string clue/str)] [a (in-string action)])
+        (if (eq? c #\G)
+          (eq? g a)
+          (begin (set! letters (cons a letters))
+                 #true)))
+      letters
+      ; Then, for all orange letters of the guess, we check that they appear (at least once)
+      ; in the action (at non-green spots of the guess).
+      (for/and  ([g (in-string guess)] [c (in-string clue/str)])
+        (when (eq? c #\Y)
+          (set! letters (remq/unordered g letters)))
+        letters)))
+   actions))
+
+(module+ test
+  ; todo: can use optimal file to check exact set of possible next words.
+  (check-equal? (filter-actions/hard-mode
+                 "raise"
+                 (clue/string->clue/int "YBBBB")
+                 '("raise" "least" "arise"))
+                '("raise" "arise"))
+  (check-equal? (filter-actions/hard-mode
+                 "leger"
+                 (clue/string->clue/int "BBBBG")
+                 '("raise" "least" "leger" "elder"))
+                '("leger" "elder"))
+  (check-equal? (filter-actions/hard-mode
+                 "reger"
+                 (clue/string->clue/int "YBBBG")
+                 '("raise" "least" "leger" "elder" "reger" "rerer"))
+                '("reger" "rerer"))
+  (check-equal? (filter-actions/hard-mode
+                 "vicar"
+                 (clue/string->clue/int "BGYGG")
+                 '("cigar" "briar" "friar" "vicar" "cimar" "dinar" "filar" "hilar" "iftar" "imbar"
+                           "invar" "lidar" "minar" "pilar" "simar" "sitar" "sizar"))
+                '("cigar" "vicar" "cimar"))
+  )
+
+;; Append in reverse order. Faster than append when the order does not matter.
+(define (rev-append left right)
+  (if (null? left)
+    right
+    (rev-append (cdr left) (cons (car left) right))))
+
+;; Returns #f if x does not exist in l (by eq?), otherwise
+;; returns a list like l where the first occurrence of x has been removed.
+(define (remq/unordered x l)
+  (let loop ([left '()] [right l])
+    (if (null? right)
+      #false ; not found
+      (let ([y (car right)])
+        (if (eq? x y)
+          (rev-append left (cdr right))
+          (loop (cons y left) (cdr right)))))))
+
+(module+ test
+  (check-equal? (remq/unordered 'a '(a b c))
+                '(b c))
+  (check-equal? (remq/unordered 'a '(b c))
+                #f)
+  (check-equal? (remq/unordered 'a '(b a c a))
+                '(b c a)))
 
 (define (ask-clue goals+)
   (let loop ()
@@ -304,7 +373,7 @@
      (printf "Wordle ~a ~a/6~a\n"
              (index-of goals target)
              (length history)
-             (if (*consistent-only?*) "*" ""))
+             (if (*consistent-only?*) "**" (if (*hard-mode?*) "*" "")))
      (for-each displayln (map (compose clue/string->squares clue/int->clue/string second)
                               (reverse history)))]
     [else (displayln "Not solved, nothing to share for social media.")]))
@@ -317,12 +386,17 @@
 (define (play target goals allowed #:? [history-hash (make-hash)])
   (when (and target (not (member target goals)))
     (error "Word is not a possible target:" target))
+
+  (define filter-actions
+    (if (*consistent-only?*)
+      filter-actions/consistent-only
+      (if (*hard-mode?*)
+        filter-actions/hard-mode
+        filter-actions/no-filter)))
   
   (let/ec return
-    (for/fold ([goals+ goals]
-               [goals- '()]
-               [allowed+ allowed]
-               [allowed- '()]
+    (for/fold ([goals+ goals] ; consistent goals
+               [actions (append goals allowed)] ; possible actions
                [history '()])
               ([i (in-naturals 1)])
       (define (get-best-guess**)
@@ -330,11 +404,9 @@
           (*first-word*)
           (hash-ref! history-hash
                      (history->string history)
-                     (λ ()
-                       (get-best-guess* goals+ goals- allowed+ allowed-
-                                        #:consistent-only? (*consistent-only?*))))))
+                     (λ () (get-best-guess goals+ actions)))))
       (unless (*silent?*)
-        (printf "\n~a: #goals+: ~a #allowed+: ~a\n" i (length goals+) (length allowed+))
+        (printf "\n~a: #goals+: ~a #actions: ~a\n" i (length goals+) (length actions))
         (flush-output))
       
       (define guess
@@ -356,11 +428,9 @@
           (printf "~a\n~a\n" (apply string (add-between (string->list guess) #\space))
                   (clue/string->squares clue-str))
           (printf "~a\n~a\n" guess (clue/string->squares clue-str))))
-           
-      (define-values (goals++ goals+-)
-        (partition-goals+ guess clue goals+))
-      (define-values (allowed++ allowed+-)
-        (partition-goals+ guess clue allowed+))
+
+      (define new-goals+ (filter-goals+ guess clue goals+))
+      (define new-actions (filter-actions guess clue actions))
            
       (define new-history (cons (list guess clue) history))
       (cond [(history-win? new-history)
@@ -369,11 +439,7 @@
                (share-social new-history goals))
              (return (reverse new-history))]
             [else
-             (values goals++
-                     (append goals+- goals-)
-                     allowed++
-                     (append allowed+- allowed-)
-                     new-history)]))))
+             (values new-goals+ new-actions new-history)]))))
 
 (define (sum-guesses occs)
   (for/sum ([(k v) (in-dict occs)])
@@ -403,6 +469,27 @@
      (and (guess? w) w))
    (with-input-from-file f port->lines)))
 
+(define (tree-file->history-hash f)
+  (define lines (file->lines f))
+  (let ([history-hash (make-hash)])
+    (define line1 (string-split (first lines)))
+    (define first-word (first line1))
+    (hash-set! history-hash "" first-word)
+    (let loop ([h `((,first-word #f))] [h2 (rest line1)] [lines (rest lines)])
+      (cond
+        [(or (empty? h2) (empty? (rest h2)))
+         (unless (empty? lines)
+           (loop h (string-split (first lines)) (rest lines)))]
+        [else
+         (define clue (clue/string->clue/int (substring (first h2) 0 5)))
+         (define level (string->number (substring (first h2) 5 6)))
+         (define word (first (first (take-right h level))))
+         (define new-h (cons (list word clue) (take-right h (- level 1))))
+         (define new-word (second h2))
+         (hash-set! history-hash (history->string new-h) new-word)
+         (loop (cons (list new-word #f) new-h) (cddr h2) lines)])
+      history-hash)))
+
 (define (main #:! play)
  
   (define-global *target* #false
@@ -431,7 +518,7 @@
     values
     '("--cache"))
   
-  (void (globals->command-line))
+  (void (globals->command-line #:mutex-groups (list (list *consistent-only?* *hard-mode?*))))
 
   (define goals (file->words (*goals-file*)))
   (define allowed (if (*allowed-file*) (file->words (*allowed-file*)) '()))

@@ -37,7 +37,7 @@ load (if the file exists) and save cached results. The cache file should be made
 specific to the list of goals, the list of allowed words and whether 
 `--consistent-only` is used.
 
-Use the flag `--consistent-only` to make the solver play in 'hard mode', that is,
+Use the flag `--consistent-only` to make the solver play in 'very hard mode', that is,
 any word played must be consistent with all the clues obtained so far.
 
 #### Make the solver guess all words from `goals.txt` in sequence:
@@ -60,7 +60,7 @@ The value of a guess is the expected size of the remaining words
 after the next clue is observed.
 
 While this greedy strategy is not optimal (an optimal strategy requires planning),
-in particular in 'hard mode' (flag `--consistent-only`),
+in particular with `--hard-mode` and `--consistent-only`,
 it is still quite good in general especially given how simple it is.
 
 On the Wordle original lists of 2315 solution words and 10657 allowed words,
@@ -69,8 +69,8 @@ is 3.42](http://sonorouschocolate.com/notes/index.php?title=The_best_strategies_
 (see also this [blog post](https://www.poirrier.ca/notes/wordle-optimal/)),
 with a worst case of 5 guesses at most.
 
-The same in hard mode requires 3.60 (8339/2315) guesses on average, with 7 words requiring 7 guesses
-and 1 word requiring 8 guesses.
+The same `--consistent-only` requires 3.60 (8339/2315) guesses on average, with 7 words requiring 7 guesses
+and 1 word requiring 8 guesses. (The same strategy can also be used for `--hard-mode`.)
 
 On the whole list of 12972 words, our strategy takes 4.12 guesses on average (53503/12972),
 with a worst case of 8 (only 1 word), and 25 words taking more than 6 guesses.
