@@ -25,11 +25,13 @@ Returns @racket[#true] if @racket[x] matches @racket[(listof (list/c guess? clue
 
 @defproc[(play [target guess?]
                [goals (listof guess?)]
-               [allowed (listof guess?)]
+               [all-words (listof guess?)]
                [#:history-hash history-hash hash? (make-hash)])
          history?]{
 The main function to play a game, either with user interaction or automatically.
 Its behaviour depends on several globals described below.
+@racket[all-words] must be a superset of @racket[goals], and @racket[target] must be a member of
+ @racket[goals].
 }
 
 

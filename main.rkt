@@ -255,15 +255,15 @@
 
 (define filter-actions/consistent-only filter-goals+)
 
-(define (filter-actions/hard-mode guess clue/int actions)
+(define (filter-actions/hard-mode guess clue/int goals+)
   ; Can reuse black letters (even though this is inconsistent with the guess).
   (define clue/str (clue/int->clue/string clue/int))
   (filter
-   (λ (action)
+   (λ (g+)
      (define letters '())
      (and
       ; First we check that all green spots of the guess are also green in the action.
-      (for/and ([g (in-string guess)] [c (in-string clue/str)] [a (in-string action)])
+      (for/and ([g (in-string guess)] [c (in-string clue/str)] [a (in-string g+)])
         (if (eq? c #\G)
           (eq? g a)
           (begin (set! letters (cons a letters))
@@ -275,7 +275,7 @@
         (when (eq? c #\Y)
           (set! letters (remq/unordered g letters)))
         letters)))
-   actions))
+   goals+))
 
 (module+ test
   ; todo: can use optimal file to check exact set of possible next words.
@@ -383,7 +383,7 @@
 
 ;; If target is #f, then the user is asked for clues.
 ;; Warning: some globals act as argument. Bad style.
-(define (play target goals allowed #:? [history-hash (make-hash)])
+(define (play target goals all-words #:? [history-hash (make-hash)])
   (when (and target (not (member target goals)))
     (error "Word is not a possible target:" target))
 
@@ -396,7 +396,7 @@
   
   (let/ec return
     (for/fold ([goals+ goals] ; consistent goals
-               [actions (append goals allowed)] ; possible actions
+               [actions all-words] ; possible actions
                [history '()])
               ([i (in-naturals 1)])
       (define (get-best-guess**)
@@ -469,6 +469,13 @@
      (and (guess? w) w))
    (with-input-from-file f port->lines)))
 
+;; Parses one of the .txt files found on:
+;; https://github.com/alex1770/wordle
+;; and returns a history-hash.
+;; Example:
+#;(begin
+    (define history-hash (tree-file->history-hash "Optimaltree.hardmode5.txt"))
+    (write-to-file (hash->list history-hash) "optimal-palet-hard.rktd" #:exists 'replace))
 (define (tree-file->history-hash f)
   (define lines (file->lines f))
   (let ([history-hash (make-hash)])
@@ -522,8 +529,9 @@
 
   (define goals (file->words (*goals-file*)))
   (define allowed (if (*allowed-file*) (file->words (*allowed-file*)) '()))
+  (define all-words (remove-duplicates (append goals allowed)))
   (unless (*silent?*)
-    (printf "#goals: ~a #allowed: ~a\n" (length goals) (length allowed)))
+    (printf "#goals: ~a #all-words: ~a\n" (length goals) (length all-words)))
 
   (define target (if (equal? (*target*) "random")
                    (random-ref goals)
@@ -539,13 +547,13 @@
          ; Play all games with all goal words as targets.
          (define occs (make-hash))
          (for ([target (in-list goals)])
-           (define res (play target goals allowed #:history-hash history-hash))
+           (define res (play target goals all-words #:history-hash history-hash))
            (hash-update! occs (length res) add1 0)
            (printf "~a: ~a\n" target (sort (hash->list occs) < #:key car)))
          (print-occs-stats occs)]
         [else
          ; Play one game with the given target.
-         (println (play target goals allowed #:history-hash history-hash))])
+         (println (play target goals all-words #:history-hash history-hash))])
   (when (*cache-file*)
     (write-to-file (hash->list history-hash) (*cache-file*) #:exists 'replace)))
 
