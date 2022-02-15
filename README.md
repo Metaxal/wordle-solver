@@ -64,13 +64,17 @@ in particular with `--hard-mode` and `--consistent-only`,
 it is still quite good in general especially given how simple it is.
 
 On the Wordle original lists of 2315 solution words and 10657 allowed words,
-it has an expected number of guesses of 3.48 (8060/2315) while [the optimum
+it has an expected number of guesses of 3.48 (8060/2315, first word: `roate`) while [the optimum
 is 3.42](http://sonorouschocolate.com/notes/index.php?title=The_best_strategies_for_Wordle#Assumptions_about_the_rules_of_Wordle)
 (see also this [blog post](https://www.poirrier.ca/notes/wordle-optimal/)),
 with a worst case of 5 guesses at most.
+By forcing the first word to be `salet`, the average number of guesses is 3.448 (7982/2135) with a single word taking 6 guesses.
+
 
 The same `--consistent-only` requires 3.60 (8339/2315) guesses on average, with 7 words requiring 7 guesses
 and 1 word requiring 8 guesses. (The same strategy can also be used for `--hard-mode`.)
+By forcing the first word to be `salet`, it requires 3.54 (8204/2315) guesses on average,
+with one word taking 8 guesses and 6 words taking 7 guesses.
 
 On the whole list of 12972 words, our strategy takes 4.12 guesses on average (53503/12972),
 with a worst case of 8 (only 1 word), and 25 words taking more than 6 guesses.
