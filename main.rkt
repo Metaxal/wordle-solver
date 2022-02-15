@@ -137,6 +137,7 @@
 
 ;; This function works for all ascii characters (<256), using a hasheq instead of a vector,
 ;; but is twice as slow (although not always).
+;; TODO: Cache/memoize but string-concat guess and solution, or maybe even use integers as indices? 
 (define (guess->clue/int guess solution)
   (define letter-counts (make-hasheq)) ; Notice: only for ascii!
   (define greens
@@ -226,7 +227,7 @@
 ;; Returns the guess among guesses that minimizes guess-value, i.e.,
 ;; that separates goals+ the best.
 ;; aka get-best-action
-(define (get-best-guess guesses goals+)
+(define (get-best-guess goals+ guesses)
   ; Pick an action.
   ; Pick a word to test how good it is at gaining information.
   (for/fold ([best-guess #f]
@@ -343,7 +344,7 @@
       [else
        (loop)])))
 
-(define (ask-guess get-best-guess** goals+)
+(define (ask-guess get-best-guess** goals+ actions)
   (let loop ()
     (display "Make a guess: ")
     (flush-output)
@@ -353,8 +354,11 @@
       [("help")
        (displayln "Commands: list, best, help")
        (loop)]
+      [("actions")
+        (println actions)
+        (loop)]
       [("list")
-       (unless (*silent?*) (pretty-print goals+))
+       (pretty-print goals+)
        (loop)]
       [("best")
        (printf "Best guess: ~a\n" (get-best-guess**))
@@ -415,7 +419,7 @@
                (unless (*silent?*)
                  (printf "Guess: ~a\n" guess))
                guess]
-              [else (ask-guess get-best-guess** goals+)]))
+              [else (ask-guess get-best-guess** goals+ actions)]))
       
       (define clue-str
         (if target
