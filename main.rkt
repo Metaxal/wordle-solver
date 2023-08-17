@@ -368,10 +368,20 @@
        (printf "Best guess: ~a\n" (get-best-guess**))
        (loop)]
       [else
-       (unless (*silent?*)
-         (define qual (guess-value guess goals+))
-         (printf "guess value: ~a\n" (/ qual 1. (length goals+))))
-       guess])))
+       (cond
+         [(member guess actions)
+          (unless (*silent?*)
+            (define qual (guess-value guess goals+))
+            (printf "guess value: ~a\n" (/ qual 1. (length goals+))))
+          guess]
+         [else
+          (unless (*silent?*)
+            (define qual (guess-value guess goals+))
+            (printf "guess value: ~a\n" (/ qual 1. (length goals+))))
+          (writeln guess)
+          (writeln (take actions 10))
+          (displayln "Invalid guess: not in the list of actions. Try again.")
+          (loop)])])))
 
 ;; Assumes that goals is the list of goals in the same order as the official Wordle list.
 (define (share-social history goals)
