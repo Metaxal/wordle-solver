@@ -41,6 +41,10 @@
 (define-global:string *first-word* #f
   "First word to play, to speed up computation.")
 
+;; Also takes care of removing "\r" on Windows(!)
+(define (read-word)
+  (string-downcase (string-trim (read-line))))
+
 ;;; A clue/int is a number between 0 and 3^5, and corresponds to the sequence of black, yellow and
 ;;; green squares (clue/string).
 ;;; Greedy goal: minimize the size of the remaining set in the worst case
@@ -72,14 +76,14 @@
 
 (define (clue/string? str)
   (and (= word-len (string-length str))
-       (for/and ([c str]) (member c '(#\B #\Y #\G)))))
+       (for/and ([c str]) (member c '(#\B #\Y #\G #\b #\y #\g)))))
 
 
 (define (clue/string->clue/int str)
   (for/fold ([n 0])
             ([c (in-string str)])
     (+ (* n 3)
-       (case c [(#\G) 0] [(#\Y) 1] [(#\B) 2] [else (error "wrong character")]))))
+       (case c [(#\G #\g) 0] [(#\Y #\y) 1] [(#\B #\b) 2] [else (error "wrong character")]))))
 
 (define (clue/int->clue/string clue)
   (apply
@@ -92,9 +96,9 @@
    string
    (for/list ([c clue])
      (case c
-       [(#\B) #\⬛]
-       [(#\Y) #\🟨]
-       [(#\G) #\🟩]))))
+       [(#\B #\b) #\⬛]
+       [(#\Y #\y) #\🟨]
+       [(#\G #\g) #\🟩]))))
 
 (define (letter->integer c)
   (- (char->integer c)
@@ -331,7 +335,7 @@
 (define (ask-clue goals+)
   (let loop ()
     (displayln "Enter clue [G=correct, Y=wrong place, B=incorrect]:")
-    (define clue (read-line))
+    (define clue (read-word))
     (cond
       [(member clue '("help"))
        (displayln "Commands: list, help")
@@ -348,7 +352,7 @@
   (let loop ()
     (display "Make a guess: ")
     (flush-output)
-    (define guess (read-line))
+    (define guess (read-word))
 
     (case guess
       [("help")
